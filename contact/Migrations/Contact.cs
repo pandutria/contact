@@ -9,7 +9,7 @@ namespace contact.Migrations
         [Key]
         public int id { get; set; }
         public int number { get; set; }
-        public byte photo { get; set; }
+        public byte[] photo { get; set; }
         public bool isActive { get; set; }
 
         public int userId { get; set; }

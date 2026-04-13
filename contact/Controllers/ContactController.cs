@@ -4,6 +4,7 @@ using contact.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace contact.Controllers
 {
@@ -22,7 +23,7 @@ namespace contact.Controllers
         [HttpGet]
         public IActionResult getAllContact()
         {
-            var query = db.contact.ToList();
+            var query = db.contact.Include(x => x.user).ToList();
 
             return Ok(new
             {
@@ -45,7 +46,7 @@ namespace contact.Controllers
 
         [Authorize]
         [HttpPost("create")]
-        public IActionResult create(CreateContactRequest dto)
+        public IActionResult create([FromForm] CreateContactRequest dto)
         {
             var userId = User.FindFirst("id")?.Value;
 
@@ -54,11 +55,79 @@ namespace contact.Controllers
                 return StatusCode(401, new { message = "User must be login first" });
             }
 
+            byte[] photoByte = null;
+
+            if (dto.photo != null)
+            {
+                var stream = new MemoryStream();
+                dto.photo.CopyTo(stream);
+                photoByte = stream.ToArray();
+            }
+
             var query = new Contact();
             query.number = dto.number;
             query.userId = Convert.ToInt32(userId);
             query.isActive = true;
+            query.photo = photoByte;    
 
+            db.contact.Add(query);
+            db.SaveChanges();
+
+            return StatusCode(201, new
+            {
+                message = "Create data success",
+                data = query
+            });
+        }
+
+        [Authorize]
+        [HttpPut("update/{id}")]
+        public IActionResult update(int id, [FromForm] CreateContactRequest dto)
+        {
+            var userId = User.FindFirst("id")?.Value;
+
+            if (userId == null)
+            {
+                return StatusCode(401, new { message = "User must be login first" });
+            }
+
+            byte[] photoByte = null;
+
+            if (dto.photo != null)
+            {
+                var stream = new MemoryStream();
+                dto.photo.CopyTo(stream);
+                photoByte = stream.ToArray();
+            }
+
+            var query = db.contact.FirstOrDefault(x => x.id == id);
+            query.number = dto.number;
+            query.userId = Convert.ToInt32(userId);
+            query.isActive = true;
+            query.photo = photoByte;
+
+            db.SaveChanges();
+
+            return StatusCode(201, new
+            {
+                message = "Update data success",
+                data = query
+            });
+        }
+
+        [HttpDelete("delete/{id}")]
+        public IActionResult delete(int id)
+        {
+            var query = db.contact.FirstOrDefault(x => x.id == id);
+
+            db.contact.Remove(query);
+            db.SaveChanges();
+
+            return StatusCode(200, new
+            {
+                message = "Delete data success",
+                data = query
+            });
         }
     }
 }

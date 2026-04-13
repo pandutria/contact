@@ -122,6 +122,13 @@ namespace contact.Controllers
                 return BadRequest(new { message = "User not found" });
             }
 
+            var queryCheck = db.contact.Any(x => x.userId == id);
+
+            if (queryCheck)
+            {
+                return Conflict(new { message = "User have a contact!" });
+            }
+
             db.user.Remove(query);
             db.SaveChanges();
 
